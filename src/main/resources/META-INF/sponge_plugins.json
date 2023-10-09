@@ -1,0 +1,36 @@
+{
+  "loader": {
+    "name": "java_plain",
+    "version": "1.0"
+  },
+  "license": "MIT",
+  "plugins": [
+    {
+      "id": "checkmod",
+      "name": "CheckMod",
+      "version": "1.0.0",
+      "entrypoint": "org.rei.checkmod.CheckMod",
+      "description": "",
+      "links": {
+        "homepage": "",
+        "source": "",
+        "issues": ""
+      },
+      "contributors": [ ],
+      "dependencies": [
+        {
+          "id": "spongeapi",
+          "version": "8.2.0",
+          "load-order": "AFTER",
+          "optional": false
+        },
+        {
+          "id": "spongeforge",
+          "version": "8.2.0",
+          "load-order": "AFTER",
+          "optional": false
+        }
+      ]
+    }
+  ]
+}
