@@ -1,85 +1,81 @@
 plugins {
     id "java-library"
     id "com.github.johnrengelman.shadow" version "7.1.2"
-    id 'org.spongepowered.gradle.vanilla' version '0.2.1-SNAPSHOT'
-//     id("org.spongepowered.gradle.vanilla") version "0.2"
-//    id("net.minecraftforge.gradle") version "5.1.74"
+    id "dev.architectury.loom" version "1.3.357"
 }
 
-allprojects {
-    apply plugin: "java-library"
+apply plugin: "java-library"
+apply plugin: "com.github.johnrengelman.shadow"
 
-    group = rootProject.maven_group
-    version = rootProject.mod_version
-
-    configurations {
-        provided
-        shade
-
-        provided.extendsFrom shade
-        implementation.extendsFrom provided
-    }
-
-    repositories {
-        mavenCentral()
-        maven { url "https://maven.fabricmc.net/" }
-        maven { url "https://maven.minecraftforge.net/" }
-        maven { url "https://repo.spongepowered.org/repository/maven-public/" }
-    }
-    tasks.withType(JavaCompile)
-    {
-        options.encoding = "UTF-8"
-        options.release = 8
-    }
-    java {
-        withSourcesJar()
+group = rootProject.maven_group
+version = rootProject.mod_version
+loom {
+    silentMojangMappingsLicense()
+    accessWidenerPath = file('/src/main/resources/checkmod.accesswidener')
+    forge {
+        convertAccessWideners = true
     }
 }
-
-subprojects {
-    apply plugin: "com.github.johnrengelman.shadow"
-
-    shadowJar {
-        configurations = [project.configurations.shade]
-        dependencies {
-            include project(':')
-        }
-    }
-
-    dependencies {
-        provided project(path: ':', configuration: 'provided')
-        shade project(path: ':', transitive: false)
-        shade project(path: ':', configuration: 'shade')
+configurations {
+    provided
+    shade
+    spongeforge
+    provided.extendsFrom shade
+    implementation.extendsFrom provided
+}
+repositories {
+    mavenCentral()
+    maven { url "https://maven.fabricmc.net/" }
+    maven { url "https://maven.minecraftforge.net/" }
+    maven { url "https://repo.spongepowered.org/repository/maven-public/" }
+}
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(8)
     }
 }
+tasks.withType(JavaCompile) {
+    options.encoding = "UTF-8"
+}
 
-
+shadowJar {
+    shadowJar.configure {
+        archiveClassifier.set("shadow")
+    }
+    configurations = [project.configurations.shade]
+}
 dependencies {
-    provided 'org.spongepowered:sponge:1.16.5-8.1.0-SNAPSHOT:dev'
+    minecraft "com.mojang:minecraft:${project.minecraft_version}"
+    forge "net.minecraftforge:forge:${project.forge_version}"
+    mappings loom.officialMojangMappings()
+
+    provided "org.spongepowered:sponge:1.16.5-8.2.0"
+    provided "org.spongepowered:spongeforge:1.16.5-36.2.5-8.2.0"
     implementation "com.google.guava:guava:17.0"
 }
-minecraft {
-    version '1.16.5'
+
+remapJar {
+    inputFile.set shadowJar.archiveFile
+    dependsOn shadowJar
+}
+build.dependsOn remapJar
+
+task setupPlugins(type: Copy) {
+    from remapJar
+    into 'run/mods/plugins'
+    exclude { it.file.name.contains("spongeforge.jar") }
 }
 
+task fatJar(type: Jar)
+{
+    archiveBaseName = "spongeforge.jar"
+    from {configurations.spongeforge }
+    with jar
+}
+task setupServer(type: Copy) {
+    dependsOn 'setupPlugins'
+    dependsOn 'fatJar'
+    into 'run/mods'
+    from configurations.spongeforge
 
-//val Project.minecraft: UserDevExtension
-//    get() = extensions.getByName<UserDevExtension>("minecraft")
-//    tasks.withType<Jar> {
-//    }
-//val runProperties = mapOf(
-//        // Recommended logging data for a userdev environment.
-//        Pair("forge.logging.markers", "SCAN,REGISTRIES,REGISTRYDUMP"),
-//        // Recommended logging level for the console.
-//        Pair("forge.logging.console.level", "debug")
-//)
-//java {
-//    // Loom will automatically attach sourcesJar to a RemapSourcesJar task and to the "build" task
-//    // if it is present.
-//    // If you remove this line, sources will not be generated.
-//    withSourcesJar()
-//}
-//minecraft.let {
-//    it.version( "1.16.5")
-//
-//}
+}

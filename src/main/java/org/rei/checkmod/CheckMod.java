@@ -1,33 +1,29 @@
 package org.rei.checkmod;
 
+import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
-import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.identity.Identity;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.LinearComponents;
 import net.kyori.adventure.text.format.NamedTextColor;
-import net.kyori.adventure.text.format.Style;
-import net.kyori.adventure.text.format.TextDecoration;
-import org.apache.logging.log4j.LogManager;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraftforge.fml.network.FMLConnectionData;
+import net.minecraftforge.fml.network.NetworkHooks;
 import org.apache.logging.log4j.Logger;
-import org.jetbrains.annotations.NotNull;
 import org.spongepowered.api.Server;
-import org.spongepowered.api.Sponge;
 import org.spongepowered.api.command.Command;
 import org.spongepowered.api.command.CommandResult;
-import org.spongepowered.api.command.parameter.Parameter;
 import org.spongepowered.api.event.Listener;
 import org.spongepowered.api.event.lifecycle.ConstructPluginEvent;
 import org.spongepowered.api.event.lifecycle.RegisterCommandEvent;
 import org.spongepowered.api.event.lifecycle.StartingEngineEvent;
 import org.spongepowered.api.event.lifecycle.StoppingEngineEvent;
 import org.spongepowered.api.event.network.ServerSideConnectionEvent;
-import org.spongepowered.api.scheduler.Task;
 import org.spongepowered.plugin.PluginContainer;
 import org.spongepowered.plugin.builtin.jvm.Plugin;
-import org.rei.checkmod.CheckModAPI;
+
+import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Consumer;
 
 @Plugin("checkmod")
 public class CheckMod {
@@ -61,38 +57,28 @@ public class CheckMod {
     @Listener
     public void onRegisterCommands(final RegisterCommandEvent<Command.Parameterized> event) {
         event.register(this.container, Command.builder()
-            .executor(ctx -> {
-//                ctx.cause().audience().forEachAudience(consumer);
-                ctx.sendMessage(Identity.nil(), LinearComponents.linear(
-                    NamedTextColor.AQUA,
-                    Component.text("Your mods are:\n")
-//                    Component.text(mods)
-                ));
+                .executor(ctx -> {
+                    ctx.sendMessage(Identity.nil(), LinearComponents.linear(
+                            NamedTextColor.AQUA,
+                            Component.text("Your mods are:\n")
+                    ));
 
-                return CommandResult.success();
-            })
-            .build(), "checkmod", "cm");
+                    return CommandResult.success();
+                })
+                .build(), "checkmod", "cm");
     }
     @Listener
     public void onConnection(ServerSideConnectionEvent.Join event)
     {
-        logger.info("OnConnection");
-        List<IModData> mods = CheckModAPI.getMods(event.player());
         logger.info("Player joined {}", event.player().identity().uuid().toString());
+        ServerPlayer serverPlayer = (ServerPlayer)event.player();
+        FMLConnectionData connectionData = NetworkHooks.getConnectionData(serverPlayer.connection.connection);
+        if (connectionData == null) return;
+        ImmutableList<String> mods = connectionData.getModList();
 
         int i = 0;
-        for (IModData mod: mods) {
-            logger.info("{} = {}", ++i, mod.getCompleteData());
+        for (String mod: mods) {
+            logger.info("{} = {}", ++i, mod);
         }
-//        Task task = Task.builder().execute(() -> {
-//            List<IModData> mods = CheckModAPI.getMods(event.player());
-//            logger.info("Player joined {}", event.player().identity().uuid().toString());
-//
-//            int i = 0;
-//            for (IModData mod: mods) {
-//                logger.info("{} = {}", ++i, mod.getCompleteData());
-//            }
-//        }).build();
-//        Sponge.asyncScheduler().submit(task);
     }
 }

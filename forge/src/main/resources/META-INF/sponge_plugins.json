@@ -9,7 +9,7 @@
       "id": "checkmod",
       "name": "CheckMod",
       "version": "1.0.0",
-      "entrypoint": "org.rei.checkmod.CheckMod",
+      "entrypoint": "org.rei.checkmod.forge.CheckMod",
       "description": "",
       "contributors": [ ],
       "dependencies": [
